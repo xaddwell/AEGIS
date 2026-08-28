@@ -64,6 +64,10 @@ python train.py \
 The script formats the calibration set (`data/TrainData/data`), extracts hidden states at the
 selected layer, fits `AsymmetricLDA`, and saves the projector to `data/models/`.
 
+> ⚠️ The packaged `data/` is a small **demo-only** set for smoke-testing the pipeline.
+> To reproduce the paper results, train and evaluate on the paper-consistent datasets —
+> see [Reproducing the paper results](#reproducing-the-paper-results-datasets).
+
 **Parameter selection (used in the paper):**
 
 | Parameter | Value | Note |
@@ -95,6 +99,32 @@ python demo.py --model_name llama3.1-8b
 ```
 
 The demo prints per-example projection scores and aggregate ACC/FPR/FNR on the packaged test set.
+
+> ⚠️ Demo-only: the numbers printed here come from the small packaged set and are **not**
+> the numbers reported in the paper (ACC >98%, FPR 0.29% were obtained on the
+> OpenPromptInjection benchmark with the paper's calibration corpus).
+
+## Reproducing the paper results (datasets)
+
+The current training in this repository is **only for testing the pipeline**. For actual
+evaluation, use the datasets consistent with the paper:
+
+**Evaluation (test):** the [OpenPromptInjection](https://github.com/liu00222/Open-Prompt-Injection)
+benchmark — 7 NLP tasks (duplicate sentence detection, grammar correction, hate speech
+detection, natural language inference, sentiment analysis, spam detection, text
+summarization) with 100 instruction–data pairs per task, evaluated against 8 attacks
+(Naive, Escape Characters, Context Ignoring, Fake Completion, Combined, Universal
+Injection, NeuralExec, PLeak).
+
+**Training (calibration):** the balanced corpus described in the paper — benign samples
+from processed [Alpaca](https://huggingface.co/datasets/tatsu-lab/alpaca) and
+[Natural Questions](https://huggingface.co/datasets/google-research-datasets/natural_questions),
+and malicious samples generated with the Naive Attack and NeuralExec configurations;
+200 samples per class are randomly sampled to estimate the instruction-sensitive
+projector `w*`.
+
+With those datasets and the parameter settings above, the paper reports an average ACC
+above 98% and a consistent FPR of 0.29% across the 8 attacks.
 
 ## Calibration / test data format
 
