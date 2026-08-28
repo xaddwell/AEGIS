@@ -53,8 +53,7 @@
 │   └── dataset/                  # data loading & prompt formatting
 ├── train.py                      # training: fit the instruction-sensitive projector
 ├── test.py                       # inference/test: evaluate the fitted projector
-├── steering.py                   # experimental steering-based defense prototype — NOT part of AEGIS
-├── benchmark_inststeer.py        # main benchmark (detection / multilayer; optional experimental defense mode)
+├── benchmark_inststeer.py        # main benchmark (detection / multilayer)
 ├── eval_multilayer_voting.py     # multi-layer consensus evaluation
 ├── demo.py                       # quick end-to-end inference demo
 └── data/
@@ -116,9 +115,7 @@ python eval_multilayer_voting.py --model_name qwen3-4b
 
 Reported metrics: accuracy (ACC), false positive rate (FPR), false negative rate (FNR), true positive rate (TPR), F1, plus inference latency and memory overhead.
 
-> ℹ️ AEGIS performs **detection only**. `benchmark_inststeer.py` also ships an experimental
-> steering-based `--mode defense` prototype (`steering.py`); it is **not part of the
-> AEGIS method** and is not reported in the paper.
+> ℹ️ AEGIS performs **detection only** — it classifies inputs and never steers or modifies model generation.
 
 ### 3. Demo — end-to-end detection
 

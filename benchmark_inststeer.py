@@ -1,12 +1,9 @@
 """
-Instruction Steering 方法性能基准测试脚本
+AEGIS 检测方法性能基准测试脚本
 
 使用方式:
     # 测试检测模式（LDA分类器）
     python benchmark_inststeer.py --mode detection --model_name llama3.1-8b
-    
-    # 测试防御模式（Steering Defense）
-    python benchmark_inststeer.py --mode defense --model_name llama3.1-8b
     
     # 测试多层投票检测器
     python benchmark_inststeer.py --mode multilayer --model_name llama3.1-8b
@@ -46,7 +43,6 @@ from inststeer.dataset import get_formatted_data
 from inststeer.utils.hidden_state import get_hidden_states_full, extract_hidden_states_layer_token
 from inststeer.utils import seed_everything, load_pickle, save_pickle
 from datasets import Dataset, concatenate_datasets
-from steering import SteeringDefense, SteeringConfig
 
 seed_everything(42)
 
@@ -373,198 +369,6 @@ def benchmark_lda_detection(
         'num_samples': len(texts),
         'model_name': model_name,
         'detection_layer': extract_layer_ids,
-        
-        # 时间指标
-        'load_time_s': load_time,
-        'total_inference_time_s': total_inference_time,
-        'avg_time_per_sample_ms': avg_time_per_sample * 1000,
-        'throughput_samples_per_s': throughput,
-        
-        # GPU显存指标
-        'model_gpu_memory_mb': model_gpu_memory,
-        'inference_gpu_memory_mb': inference_gpu_memory,
-        'total_gpu_memory_mb': total_gpu_memory,
-        'peak_gpu_memory_mb': peak_gpu_memory,
-        
-        # CPU内存指标
-        'model_cpu_memory_mb': model_cpu_memory,
-        'inference_cpu_memory_mb': inference_cpu_memory,
-        'total_cpu_memory_mb': total_cpu_memory,
-        'peak_cpu_memory_mb': peak_cpu_memory,
-    }
-
-
-# =============================================================================
-# 防御模式：Steering Defense
-# =============================================================================
-
-def benchmark_steering_defense(
-    model_name: str,
-    lda_model_path: str,
-    texts: List[str],
-    device_id: int = 0,
-    strength: float = -2.0,
-    max_new_tokens: int = 50,
-    warmup_runs: int = 3,
-) -> Dict[str, Any]:
-    """
-    测试 Steering Defense 的性能
-    
-    这个模式测试完整的生成+防御性能
-    """
-    print(f"\n{'='*70}")
-    print(f"Benchmarking: Steering Defense Mode")
-    print(f"{'='*70}")
-    
-    # 清理缓存
-    clear_gpu_cache()
-    time.sleep(1)
-    
-    # 记录初始显存
-    initial_gpu_mem = get_gpu_memory_usage(device_id)
-    initial_cpu_mem = get_cpu_memory_usage()
-    
-    print(f"\n[初始状态]")
-    print(f"  GPU显存: {initial_gpu_mem.get('used_mb', 0):.2f} MB")
-    print(f"  CPU内存: {initial_cpu_mem['rss_mb']:.2f} MB")
-    
-    # 加载模型
-    print(f"\n[加载模型和防御系统...]")
-    load_start = time.time()
-    
-    try:
-        cfg = load_model_config(model_name)
-        model = cfg['model'].eval().to(f"cuda:{device_id}")
-        tokenizer = cfg['tokenizer']
-        
-        # 初始化防御系统
-        config = SteeringConfig(strength=strength, mode="adaptive")
-        defense = SteeringDefense(
-            model=model,
-            tokenizer=tokenizer,
-            lda_model_path=lda_model_path,
-            config=config,
-            device=f"cuda:{device_id}"
-        )
-        
-    except Exception as e:
-        print(f"[ERROR] Failed to load defense system: {e}")
-        return {
-            'method': 'steering_defense',
-            'error': str(e),
-            'status': 'failed',
-        }
-    
-    load_time = time.time() - load_start
-    
-    # 记录加载后显存
-    after_load_gpu_mem = get_gpu_memory_usage(device_id)
-    after_load_cpu_mem = get_cpu_memory_usage()
-    
-    model_gpu_memory = after_load_gpu_mem.get('used_mb', 0) - initial_gpu_mem.get('used_mb', 0)
-    model_cpu_memory = after_load_cpu_mem['rss_mb'] - initial_cpu_mem['rss_mb']
-    
-    print(f"  加载时间: {load_time:.2f}s")
-    print(f"  模型显存占用: {model_gpu_memory:.2f} MB")
-    print(f"  模型CPU内存占用: {model_cpu_memory:.2f} MB")
-    print(f"  Steering强度: {strength}")
-    
-    # 预热运行
-    print(f"\n[预热运行 {warmup_runs} 次...]")
-    warmup_text = texts[0] if texts else "Test prompt"
-    
-    for i in range(warmup_runs):
-        try:
-            _ = defense.generate(
-                system_prompt="You are a helpful assistant.",
-                user_instruction="",
-                untrusted_data=warmup_text,
-                max_new_tokens=20,
-                enable_steering=True
-            )
-            clear_gpu_cache()
-        except Exception as e:
-            print(f"  [Warning] Warmup run {i+1} failed: {e}")
-    
-    # 正式推理测试（只测试前N个样本，因为生成很慢）
-    test_samples = min(50, len(texts))  # 生成模式只测试50个样本
-    print(f"\n[推理测试: {test_samples} 个样本 (生成模式)...]")
-    
-    inference_times = []
-    peak_gpu_memory = after_load_gpu_mem.get('used_mb', 0)
-    peak_cpu_memory = after_load_cpu_mem['rss_mb']
-    
-    all_outputs = []
-    
-    for text in tqdm(texts[:test_samples], desc="生成中"):
-        sample_start = time.time()
-        
-        try:
-            # 生成（带steering）
-            output = defense.generate(
-                system_prompt="You are a helpful assistant.",
-                user_instruction="",
-                untrusted_data=text,
-                max_new_tokens=max_new_tokens,
-                enable_steering=True
-            )
-            
-            sample_time = time.time() - sample_start
-            inference_times.append(sample_time)
-            all_outputs.append(output)
-            
-            # 记录峰值显存
-            current_gpu_mem = get_gpu_memory_usage(device_id)
-            current_cpu_mem = get_cpu_memory_usage()
-            
-            peak_gpu_memory = max(peak_gpu_memory, current_gpu_mem.get('used_mb', 0))
-            peak_cpu_memory = max(peak_cpu_memory, current_cpu_mem['rss_mb'])
-            
-        except Exception as e:
-            print(f"\n[ERROR] Sample failed: {e}")
-            inference_times.append(0)
-            all_outputs.append("")
-    
-    # 计算统计指标
-    total_inference_time = sum(inference_times)
-    avg_time_per_sample = total_inference_time / test_samples if test_samples > 0 else 0
-    throughput = test_samples / total_inference_time if total_inference_time > 0 else 0
-    
-    # 计算推理时的显存增量
-    inference_gpu_memory = peak_gpu_memory - after_load_gpu_mem.get('used_mb', 0)
-    inference_cpu_memory = peak_cpu_memory - after_load_cpu_mem['rss_mb']
-    
-    # 总显存占用
-    total_gpu_memory = peak_gpu_memory - initial_gpu_mem.get('used_mb', 0)
-    total_cpu_memory = peak_cpu_memory - initial_cpu_mem['rss_mb']
-    
-    # 打印结果
-    print(f"\n[性能统计]")
-    print(f"  总推理时间: {total_inference_time:.2f}s")
-    print(f"  平均每样本时间: {avg_time_per_sample*1000:.2f}ms")
-    print(f"  吞吐量: {throughput:.2f} samples/s")
-    print(f"\n[显存占用]")
-    print(f"  模型加载显存: {model_gpu_memory:.2f} MB")
-    print(f"  推理峰值增量: {inference_gpu_memory:.2f} MB")
-    print(f"  总显存占用: {total_gpu_memory:.2f} MB")
-    print(f"\n[CPU内存占用]")
-    print(f"  模型加载内存: {model_cpu_memory:.2f} MB")
-    print(f"  推理峰值增量: {inference_cpu_memory:.2f} MB")
-    print(f"  总内存占用: {total_cpu_memory:.2f} MB")
-    
-    # 清理
-    del defense, model, tokenizer
-    clear_gpu_cache()
-    time.sleep(1)
-    
-    return {
-        'method': 'steering_defense',
-        'mode': 'defense',
-        'status': 'success',
-        'num_samples': test_samples,
-        'model_name': model_name,
-        'steering_strength': strength,
-        'max_new_tokens': max_new_tokens,
         
         # 时间指标
         'load_time_s': load_time,
@@ -966,7 +770,7 @@ def save_benchmark_results(
     
     # 打印汇总表格
     print("\n" + "="*100)
-    print("INSTRUCTION STEERING BENCHMARK SUMMARY")
+    print("AEGIS DETECTION BENCHMARK SUMMARY")
     print("="*100)
     print(f"\nMethod: {results['method']}")
     print(f"Mode: {results['mode']}")
@@ -987,7 +791,7 @@ def save_benchmark_results(
     # 保存 Markdown 格式的报告
     md_path = os.path.join(output_dir, f'benchmark_{mode}_{timestamp}.md')
     with open(md_path, 'w', encoding='utf-8') as f:
-        f.write("# Instruction Steering Performance Benchmark\n\n")
+        f.write("# AEGIS Detection Performance Benchmark\n\n")
         f.write(f"**测试时间**: {timestamp}\n\n")
         f.write(f"**方法**: {results['method']}\n\n")
         f.write(f"**模式**: {results['mode']}\n\n")
@@ -996,9 +800,6 @@ def save_benchmark_results(
         
         if results['mode'] == 'detection':
             f.write(f"**检测层**: Layer {results['detection_layer']}\n\n")
-        elif results['mode'] == 'defense':
-            f.write(f"**Steering强度**: {results['steering_strength']}\n\n")
-            f.write(f"**最大生成Token数**: {results['max_new_tokens']}\n\n")
         elif results['mode'] == 'multilayer':
             f.write(f"**检测层**: {results['detection_layers']}\n\n")
             f.write(f"**层数**: {results['num_layers']}\n\n")
@@ -1033,7 +834,7 @@ def save_benchmark_results(
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Instruction Steering 性能基准测试",
+        description="AEGIS 检测性能基准测试",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
@@ -1046,22 +847,19 @@ def parse_args():
   # 测试多层投票检测模式（手动指定层范围）
   python benchmark_inststeer.py --mode multilayer --model_name llama3.1-8b --layer_range 0.5,0.6,0.7,0.8
   
-  # 测试防御模式
-  python benchmark_inststeer.py --mode defense --model_name llama3.1-8b
-  
   # 指定样本数量
   python benchmark_inststeer.py --mode detection --num_samples 500
         """
     )
     parser.add_argument("--mode", type=str, default="detection",
-                        choices=['detection', 'defense', 'multilayer'],
-                        help="测试模式: detection(单层检测), defense(防御生成), multilayer(多层投票检测)")
+                        choices=['detection', 'multilayer'],
+                        help="测试模式: detection(单层检测), multilayer(多层投票检测)")
     parser.add_argument("--model_name", type=str, default="llama3.1-8b",
                         help="模型名称 (默认: llama3.1-8b)")
     parser.add_argument("--lda_model", type=str, default=None,
                         help="LDA模型路径 (默认: 自动查找)")
     parser.add_argument("--num_samples", type=int, default=200,
-                        help="测试样本数量 (默认: 200, defense模式会限制为50)")
+                        help="测试样本数量 (默认: 200)")
     parser.add_argument("--device", type=int, default=0,
                         help="GPU 设备编号 (默认: 0)")
     parser.add_argument("--output_dir", type=str, default="logs/benchmark_inststeer",
@@ -1072,10 +870,6 @@ def parse_args():
                         help="提取层位置比例 (默认: 0.8)")
     parser.add_argument("--extract_token_position", type=str, default="last",
                         help="提取token位置 (默认: last)")
-    parser.add_argument("--strength", type=float, default=-2.0,
-                        help="Steering强度 (仅defense模式, 默认: -2.0)")
-    parser.add_argument("--max_new_tokens", type=int, default=50,
-                        help="最大生成token数 (仅defense模式, 默认: 50)")
     parser.add_argument("--layer_range", type=str, default=None,
                         help="多层检测的层位置比例，逗号分隔 (仅multilayer模式, 例如: 0.5,0.6,0.7,0.8)")
     parser.add_argument("--start_layer", type=float, default=0.5,
@@ -1097,7 +891,7 @@ def main():
     args = parse_args()
     
     print("="*70)
-    print("INSTRUCTION STEERING PERFORMANCE BENCHMARK")
+    print("AEGIS DETECTION PERFORMANCE BENCHMARK")
     print("="*70)
     print(f"模式: {args.mode}")
     print(f"模型: {args.model_name}")
@@ -1172,16 +966,6 @@ def main():
                 device_id=args.device,
                 extract_layer_position=args.extract_layer_position,
                 extract_token_position=args.extract_token_position,
-                warmup_runs=args.warmup_runs,
-            )
-        elif args.mode == 'defense':
-            results = benchmark_steering_defense(
-                model_name=args.model_name,
-                lda_model_path=lda_model_path,
-                texts=texts,
-                device_id=args.device,
-                strength=args.strength,
-                max_new_tokens=args.max_new_tokens,
                 warmup_runs=args.warmup_runs,
             )
         else:

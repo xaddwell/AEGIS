@@ -11,7 +11,7 @@ from datasets import Dataset, concatenate_datasets
 
 from inststeer.model import load_model_config
 from inststeer.dataset import get_formatted_data, get_train_data
-from inststeer.utils.steer import Steerer, AsymmetricLDA, condition_similarity, obtain_direction
+from inststeer.utils.steer import AsymmetricLDA
 from inststeer.utils.hidden_state import get_hidden_states_full, extract_hidden_states_layer_token
 from inststeer.utils import seed_everything, jdump, jload, load_pickle, save_pickle
 

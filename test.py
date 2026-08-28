@@ -13,7 +13,7 @@ from datasets import Dataset, concatenate_datasets
 from inststeer.model import load_model_config
 from inststeer.dataset import load_my_dataset
 from inststeer.dataset import get_formatted_data, get_train_data
-from inststeer.utils.steer import Steerer, AsymmetricLDA, condition_similarity, obtain_direction
+from inststeer.utils.steer import AsymmetricLDA
 from inststeer.utils import format_prompts, get_hidden_states, seed_everything, jdump, jload
 from inststeer.utils.hidden_state import get_hidden_states_fast
 
