@@ -1,0 +1,29 @@
+[project]
+name = "aegis"
+version = "0.1.0"
+description = "AEGIS: Defending Indirect Prompt Injection via Latent Instruction Manifolds (EMNLP 2026 Findings)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.5.0",
+    "transformers>=4.57.0",
+    "accelerate>=0.32.0",
+    "datasets>=4.4.0",
+    "scikit-learn>=1.7.0",
+    "numpy>=1.26.0",
+    "pandas>=2.0.0",
+    "matplotlib>=3.8.0",
+    "tqdm>=4.66.0",
+    "psutil>=5.9.0",
+    "sentencepiece>=0.2.0",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["inststeer", "inststeer.dataset", "inststeer.model", "inststeer.utils"]
+
+[tool.setuptools.package-data]
+inststeer = ["model/config.json"]

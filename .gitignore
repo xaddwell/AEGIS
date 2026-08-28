@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.venv/
+
+# Notebooks
+__marimo__/
+
+# Experiment artifacts (trained projectors, extracted hidden states, figures)
+data/models/*
+!data/models/.gitkeep
+data/hidden_states/*
+!data/hidden_states/.gitkeep
+data/figures/*
+!data/figures/.gitkeep
+*.pkl
+*.log
+
+# OS
+.DS_Store

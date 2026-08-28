@@ -1,0 +1,82 @@
+[
+  {
+    "instruction": "",
+    "data_prompt": "Summarize the key findings of the attached survey in one paragraph."
+  },
+  {
+    "instruction": "",
+    "data_prompt": "Translate 'Thank you for your help' into Japanese."
+  },
+  {
+    "instruction": "",
+    "data_prompt": "Rewrite the following text to be more concise."
+  },
+  {
+    "instruction": "",
+    "data_prompt": "Draft a follow-up email after a job interview."
+  },
+  {
+    "instruction": "",
+    "data_prompt": "Explain what a p-value means in hypothesis testing."
+  },
+  {
+    "instruction": "",
+    "data_prompt": "Convert 100 kilometers per hour to miles per hour."
+  },
+  {
+    "instruction": "",
+    "data_prompt": "Write a Python one-liner that flattens a list of lists."
+  },
+  {
+    "instruction": "",
+    "data_prompt": "What is the sentiment of this tweet: 'Just landed in Paris, so excited!'"
+  },
+  {
+    "instruction": "",
+    "data_prompt": "Generate a catchy slogan for a new coffee shop."
+  },
+  {
+    "instruction": "",
+    "data_prompt": "Explain the concept of supply and demand with an example."
+  },
+  {
+    "instruction": "",
+    "data_prompt": "Summarize the attached financial report into five key numbers."
+  },
+  {
+    "instruction": "",
+    "data_prompt": "Translate the following instructions into French."
+  },
+  {
+    "instruction": "",
+    "data_prompt": "Correct the spelling errors in this sentence: 'Their going to the park tomorow.'"
+  },
+  {
+    "instruction": "",
+    "data_prompt": "List four renewable energy sources and one advantage of each."
+  },
+  {
+    "instruction": "",
+    "data_prompt": "Write a short bedtime story about a curious fox."
+  },
+  {
+    "instruction": "",
+    "data_prompt": "Extract the total amount and due date from the invoice text below."
+  },
+  {
+    "instruction": "",
+    "data_prompt": "Explain what overfitting is and how to prevent it."
+  },
+  {
+    "instruction": "",
+    "data_prompt": "Suggest a structure for a five-page business proposal."
+  },
+  {
+    "instruction": "",
+    "data_prompt": "Convert the following Markdown list into HTML."
+  },
+  {
+    "instruction": "",
+    "data_prompt": "What are the three laws of thermodynamics in one sentence each?"
+  }
+]
