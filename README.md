@@ -18,7 +18,7 @@
 
 ## Overview
 
-**AEGIS** (*Adaptive Ensemble Guard for Injection Shielding*) is a lightweight, **training-free** defense against indirect prompt injection (IPI). It exploits the spectral asymmetry between the compact *instruction manifold* and the high-entropy *knowledge manifold* induced by instruction tuning:
+**AEGIS** (*Adaptive Ensemble Guard for Injection Shielding*) is a lightweight, **training-free**, **detection-only** defense against indirect prompt injection (IPI): it classifies whether external content carries an injected instruction, and it **never steers or modifies the model's generation**. It exploits the spectral asymmetry between the compact *instruction manifold* and the high-entropy *knowledge manifold* induced by instruction tuning:
 
 | Component | Idea |
 |---|---|
@@ -53,8 +53,8 @@
 │   └── dataset/                  # data loading & prompt formatting
 ├── train.py                      # training: fit the instruction-sensitive projector
 ├── test.py                       # inference/test: evaluate the fitted projector
-├── steering.py                   # SteeringDefense / SteeringConfig (defense mode)
-├── benchmark_inststeer.py        # main benchmark (detection / defense / multilayer)
+├── steering.py                   # experimental steering-based defense prototype — NOT part of AEGIS
+├── benchmark_inststeer.py        # main benchmark (detection / multilayer; optional experimental defense mode)
 ├── eval_multilayer_voting.py     # multi-layer consensus evaluation
 ├── demo.py                       # quick end-to-end inference demo
 └── data/
@@ -111,11 +111,14 @@ Formats the calibration set (`data/TrainData/data`), extracts hidden states at t
 python test.py --model_name qwen3-4b --device 0
 python benchmark_inststeer.py --mode detection --model_name qwen3-4b
 python benchmark_inststeer.py --mode multilayer --model_name qwen3-4b
-python benchmark_inststeer.py --mode defense --model_name qwen3-4b
 python eval_multilayer_voting.py --model_name qwen3-4b
 ```
 
 Reported metrics: accuracy (ACC), false positive rate (FPR), false negative rate (FNR), true positive rate (TPR), F1, plus inference latency and memory overhead.
+
+> ℹ️ AEGIS performs **detection only**. `benchmark_inststeer.py` also ships an experimental
+> steering-based `--mode defense` prototype (`steering.py`); it is **not part of the
+> AEGIS method** and is not reported in the paper.
 
 ### 3. Demo — end-to-end detection
 
