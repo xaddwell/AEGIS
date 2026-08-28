@@ -109,12 +109,14 @@ Each dataset directory contains:
 ## Citation
 
 ```bibtex
-@inproceedings{chen-etal-2026-aegis,
-    title = "Beyond Over-Refusal: Defending Indirect Prompt Injection via Latent Instruction Manifolds",
-    author = "Chen, Jiahao and Yin, Rui and Li, Xinfeng and Ma, Qianli and Du, Tianyu and
-              Fu, Zhihui and Wang, Jun and Wang, Zhaoxiang and Ji, Shouling",
-    booktitle = "Findings of the Association for Computational Linguistics: EMNLP 2026",
-    year = "2026",
+@misc{chen2026overrefusaldefendingindirectprompt,
+      title={Beyond Over-Refusal: Defending Indirect Prompt Injection via Latent Instruction Manifolds},
+      author={Jiahao Chen and Rui Yin and Xinfeng Li and Qianli Ma and Tianyu Du and Zhihui Fu and Jun Wang and Zhaoxiang Wang and Shouling Ji},
+      year={2026},
+      eprint={2608.22248},
+      archivePrefix={arXiv},
+      primaryClass={cs.CR},
+      url={https://arxiv.org/abs/2608.22248},
 }
 ```
 
